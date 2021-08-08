@@ -1,0 +1,33 @@
+# download base image
+FROM datamaps/r-stats:base
+
+# 
+MAINTAINER Luca Valnegri "l.valnegri@datamaps.co.uk"
+
+RUN \ 
+
+    # download and install Shiny Server
+    wget -O shiny.deb https://download3.rstudio.org/ubuntu-14.04/x86_64/shiny-server-1.5.16.958-amd64.deb  \
+    && apt -y install ./shiny.deb  \
+    && rm shiny.deb \
+	
+    # add "shiny"" to the "public" group
+    && usermod -aG public shiny \
+	
+    # add "datamaps" to the shiny server directory
+    && cd /srv/shiny-server \
+    && chown -R datamaps:public . \
+    && chmod g+w . \
+    && chmod g+s . \
+
+    # clean up
+    && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/ /tmp/* /var/tmp/*
+
+# expose Shiny Server port
+EXPOSE 3838
+
+# pass control to user "datamaps"
+USER $USERNAME
+WORKDIR /home/$USERNAME
+
+# run Shiny Server when container launched

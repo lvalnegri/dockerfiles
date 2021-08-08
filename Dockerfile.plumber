@@ -1,0 +1,13 @@
+# download base image
+FROM datamaps/r-stats:base
+
+# 
+MAINTAINER Luca Valnegri "l.valnegri@datamaps.co.uk"
+
+RUN \ 
+
+
+
+    # clean up
+    && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/ /tmp/* /var/tmp/*
+
