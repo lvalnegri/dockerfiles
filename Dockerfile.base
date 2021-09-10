@@ -1,27 +1,65 @@
-# download base image
-FROM datamaps/r-stats:conf
+# ===============================================================================
+# Creates base docker image for further builds with:
+# - required additional system packages and libraries
+# - public group (check name as PUB_GRP)
+# - public repository (check name as PUB_PATH and structure in subdirs.lst file)
+# - dedicated non-root sudoer user (check name as USERNAME)
+# ===============================================================================
 
-# 
+# download base image
+FROM ubuntu:20.04
+ 
 MAINTAINER Luca Valnegri "l.valnegri@datamaps.co.uk"
 
-RUN \ 
-    # add CRAN repository to apt
-    echo "\n# CRAN REPOSITORY\ndeb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/\n" | tee -a /etc/apt/sources.list  \
-    # add public key of CRAN maintainer
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9  \
-    # Update package manager
-    && apt update  \
-    # Install R
-    && apt install -y r-base r-base-dev  \
-    # Add configurations to .Rprofile
-    && echo " \
-     	#####################################################\n \
-    	### ADDED BY DOCKERFILE\n \
-	    PUB_PATH = '/usr/local/share/public'\n \
-	    R_LIBS_USER = '/usr/local/share/public/R_library'\n \
-	    R_MAX_NUM_DLLS = 1000\n \
-	    #####################################################\n \
-    " | tee -a $(R RHOME)/etc/Renviron \
-    
+# needed to avoid timezone issue
+ENV DEBIAN_FRONTEND noninteractive
+
+# set building constants
+ARG PUB_GRP=public
+ARG PUB_PATH=/usr/local/share/$PUB_GRP
+ARG USERNAME=datamaps
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID 
+
+# set container internal constants
+ENV PUB_PATH=$PUB_PATH
+
+# start installation process
+RUN \
+    # update software repository + Upgrade system
+    apt-get update && apt-get full-upgrade -y \
+    #
+    # install missing base commands
+    && apt-get install -y --no-install-recommends \
+		apt-transport-https \
+		software-properties-common \
+		build-essential \
+		dos2unix \
+		git-core \
+		libgit2-dev \
+		libauthen-oath-perl \
+		libsocket6-perl \
+		wget \
+		man-db \
+		nano \
+		dirmngr \
+		gpg-agent \
+		sudo \
+	#	
     # clean up
-    && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/ /tmp/* /var/tmp/*
+    && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/ /tmp/* /var/tmp/* \
+    #
+    # create a new <$PUB_GRP> group
+    && groupadd $PUB_GRP \
+    #
+    # create a new directory to be used by the <$PUB_GRP> group and connected with the similar host public dir
+    && mkdir -p $PUB_PATH \
+    && chgrp -R $PUB_GRP $PUB_PATH \
+    && chmod -R 2775 $PUB_PATH \
+    #
+    # create a new user <$USERNAME>, add it to the <$PUB_GRP> group
+    && useradd --create-home --home-dir /home/$USERNAME --no-log-init --shell /bin/bash --groups $PUB_GRP $USERNAME \
+    && usermod -aG sudo $USERNAME
+    
+# Non-interactive modes get set back
+ENV DEBIAN_FRONTEND newt
