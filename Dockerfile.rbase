@@ -1,0 +1,36 @@
+# ====================================================================
+# Creates base docker image for further builds with last version of R
+# ====================================================================
+
+# download base image
+FROM datamaps/r-stats:base
+
+MAINTAINER Luca Valnegri "l.valnegri@datamaps.co.uk"
+
+# start installation process
+RUN \ 
+    # add CRAN repository to apt
+    echo "\n# CRAN REPOSITORY\ndeb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/\n" | tee -a /etc/apt/sources.list \
+    #
+    # add public key of CRAN maintainer
+    && apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 \
+    #
+    # Update package manager
+    && apt-get update \
+    #
+    # Install R
+    && apt-get install -y r-base r-base-dev \
+    #
+    # Add configurations to .Rprofile
+    && echo " \
+     	#####################################################\n \
+    	### ADDED BY DOCKERFILE\n \
+	    PUB_PATH = '/usr/local/share/public'\n \
+	    R_LIBS_USER = '/usr/local/share/public/R_library'\n \
+	    R_MAX_NUM_DLLS = 1000\n \
+	    #####################################################\n \
+    " | tee -a $(R RHOME)/etc/Renviron \
+    #
+    # clean up
+    && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/ /tmp/* /var/tmp/*
+
