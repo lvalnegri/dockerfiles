@@ -1,18 +1,14 @@
 # ===============================================================================
-# Creates base docker image for further builds with:
-# - required additional system packages and libraries
+# Creates enhanced base docker image for further builds with:
 # - public group (check name as PUB_GRP)
 # - public repository (check name as PUB_PATH and structure in subdirs.lst file)
 # - dedicated non-root sudoer user (check name as USERNAME)
 # ===============================================================================
 
 # download base image
-FROM ubuntu:20.04
+FROM datamaps/r-stats:basemin
  
 MAINTAINER Luca Valnegri "l.valnegri@datamaps.co.uk"
-
-# needed to avoid timezone issue
-ENV DEBIAN_FRONTEND noninteractive
 
 # set building constants
 ARG PUB_GRP=public
@@ -24,33 +20,10 @@ ARG USER_GID=$USER_UID
 # set container internal constants
 ENV PUB_PATH=$PUB_PATH
 
-# start installation process
+# start process
 RUN \
-    # update software repository + Upgrade system
-    apt-get update && apt-get full-upgrade -y \
-    #
-    # install missing base commands
-    && apt-get install -y --no-install-recommends \
-		apt-transport-https \
-		software-properties-common \
-		build-essential \
-		dos2unix \
-		git-core \
-		libgit2-dev \
-		libauthen-oath-perl \
-		libsocket6-perl \
-		wget \
-		man-db \
-		nano \
-		dirmngr \
-		gpg-agent \
-		sudo \
-	#	
-    # clean up
-    && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/ /tmp/* /var/tmp/* \
-    #
     # create a new <$PUB_GRP> group
-    && groupadd $PUB_GRP \
+    groupadd $PUB_GRP \
     #
     # create a new directory to be used by the <$PUB_GRP> group and connected with the similar host public dir
     && mkdir -p $PUB_PATH \
@@ -60,6 +33,3 @@ RUN \
     # create a new user <$USERNAME>, add it to the <$PUB_GRP> group
     && useradd --create-home --home-dir /home/$USERNAME --no-log-init --shell /bin/bash --groups $PUB_GRP $USERNAME \
     && usermod -aG sudo $USERNAME
-    
-# Non-interactive modes get set back
-ENV DEBIAN_FRONTEND newt

@@ -1,16 +1,26 @@
 # download base image
-FROM datamaps/r-stats:base
+FROM datamaps/r-stats:rbase
 
-# 
 MAINTAINER Luca Valnegri "l.valnegri@datamaps.co.uk"
 
-RUN \ 
+# set building constants
+ARG USERNAME=datamaps
 
+# pass control to root for installation
+USER root
+
+# start installation process
+RUN \
+    # update software repository
+    apt-get update \
+    # install dependencies
+    # apt-get install -y psmisc libclang-dev libpq5 \
+    # && apt-get install -y gdebi-core \
     # download and install RStudio Server
     && wget -O rstudio.deb https://download2.rstudio.org/server/bionic/amd64/rstudio-server-1.4.1717-amd64.deb  \
-    && apt -y install ./rstudio.deb  \
+    && apt-get install -y ./rstudio.deb  \
     && rm rstudio.deb \
-
+    #
     # clean up
     && apt-get -y autoremove && apt-get clean && rm -rf /var/lib/apt/lists/ /tmp/* /var/tmp/*
 
